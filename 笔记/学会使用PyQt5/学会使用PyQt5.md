@@ -9,6 +9,8 @@
 #### 1. **安装PyQt相关工具 **
 
 使用pycharm软件：安装PyQt5和PyQt5-tools![image-20240913182300729](./学会使用PyQt5.assets/image-20240913182300729.png)
+使用pycharm软件：安装PyQt5和PyQt5-tools![image-20240913182300729](./image/image-20240913182300729.png)
+
 
 #### 2. **PyCharm**配置PyQt5
 
