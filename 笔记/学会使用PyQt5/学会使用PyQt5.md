@@ -665,7 +665,9 @@ if __name__ == "__main__":
 
 
 
-## 做个爬虫吧——12306查询车票
+## 做个爬虫吧——12306查询车票[^6]
+
+[^6]:test5
 
 准备工作：
 
@@ -822,9 +824,177 @@ if __name__ == "__main__":
     sys.exit(app.exec_())
 ````
 
-我是dev分支的内容
 
 
 
- 
+
+## 传感器智能控制界面[^7]
+
+[^7]:test6
+
+准备工作：
+
+新大陆物联网云平台：http://www.nlecloud.com  自己创建账号
+
+物联网仿真实训平台：[物联网仿真实训教学平台 (nlecloud.com)](http://xclass.nlecloud.com/)账号：13800239100 ~ 13800239104（共4个账号）密码：123456
+
+##### 1. 仿真
+
+![image-20241012175906362](./学会使用PyQt5.assets/image-20241012175906362.png)
+
+温湿度传感器（zigbee）：
+
+![image-20241012180023784](./学会使用PyQt5.assets/image-20241012180023784.png)
+
+网关：设备标识要和新大陆云平台的设备标识一致
+
+​	    zigbee频道号要一致
+
+![image-20241012180539254](./学会使用PyQt5.assets/image-20241012180539254.png)
+
+![](./学会使用PyQt5.assets/image-20241012180059646.png
+
+![image-20241012180121152](./学会使用PyQt5.assets/image-20241012180121152.png)
+
+开启实验模拟然后打开新大陆云平台
+
+##### 2. 新大陆云平台
+
+登陆自己的账号-->开发者中心-->新建项目
+
+![image-20241012181148954](./学会使用PyQt5.assets/image-20241012181148954.png)
+
+![image-20241012181404564](./学会使用PyQt5.assets/image-20241012181404564.png)
+
+![image-20241012181536133](./学会使用PyQt5.assets/image-20241012181536133.png)
+
+点击  my测试-->马上创建一个传感器-->ZigBee-->温度
+
+![image-20241012182037119](./学会使用PyQt5.assets/image-20241012182037119.png)
+
+ 如法炮制添加湿度。
+
+点击  马上创建一个执行器-->数字量-->风扇
+
+![image-20241012182402419](./学会使用PyQt5.assets/image-20241012182402419.png)
+
+![image-20241012182613421](./学会使用PyQt5.assets/image-20241012182613421.png)
+
+配置完成
+
+##### 3. 图形化界面
+
+
+
+为了方便编写代码，对各个模块设置好对应的名称
+
+![image-20241012183531669](./学会使用PyQt5.assets/image-20241012183531669.png)
+
+
+
+按照之前面学到的配置就好（参考上面几个项目）
+
+##### 4. 代码设计
+
+````python
+import sys
+from untitled import Ui_MainWindow
+from PyQt5.Qt import QApplication,QMainWindow,QTimer
+import requests,json
+
+class mywindow(QMainWindow,Ui_MainWindow):
+    #读取传感器
+    def read(self):
+        url4 = 'http://api.nlecloud.com/Cmds?deviceId=1078584&apiTag=m_fan' #风扇api
+        #温度模块
+        url1 ='http://api.nlecloud.com/devices/1078584/sensors/z_temp'  #温度api网址
+        resp1 = requests.get(url1,headers=self.header)	#GET
+        #print(resp1.text)
+        temp = resp1.json()['ResultObj']['Value']
+        #print(temp)
+        self.wendu.setText(str(temp))
+        #控制特定温度打开/关闭电扇
+        if temp>30:
+            requests.post(url4, headers=self.header, json=1)
+            self.on.show()
+            self.off.hide()
+        elif temp<30:
+            requests.post(url4, headers=self.header, json=0)
+            self.off.show()
+            self.on.hide()
+        #湿度模块
+        url2 ='http://api.nlecloud.com/devices/1078584/sensors/z_humi'  #湿度api网址
+        resp2 = requests.get(url2,headers=self.header)	#GET
+        #print(resp2.text)
+        humi = resp2.json()['ResultObj']['Value']
+        #print(humi)
+        self.shidu.setText(str(humi))
+
+    #控制执行器
+    def control(self):
+        url3 ='http://api.nlecloud.com/Cmds?deviceId=1078584&apiTag=m_fan'
+        key = self.sender()
+        if key==self.kai:
+            resp2 = requests.post(url3,headers=self.header,json=1)	#PSOST
+            print(resp2.text)
+            self.on.show()
+            self.off.hide()
+        elif key==self.guan:
+            resp3 = requests.post(url3,headers=self.header,json=0)
+            print(resp3.text)
+            self.off.show()
+            self.on.hide()
+
+    def dingshi(self):
+        self.read()
+    def __init__(self):
+        super().__init__()
+        self.setupUi(self)
+        self.on.hide()      #默认显示亮的图片
+        self.caiji.clicked.connect(self.read)
+        self.kai.clicked.connect(self.control)
+        self.guan.clicked.connect(self.control)
+        
+        #AccessToken
+        url0 = 'http://api.nlecloud.com/Users/Login'   
+        data = {'Account':'账号','Password':'密码'}     #填写新大陆云平台的账号和密码
+        resp0 = requests.post(url0,data=data)
+        #print(resp0.text)
+        token = resp0.json()['ResultObj']['AccessToken']
+        #print(token)
+        self.header = {'AccessToken':token}     #请求头
+        
+        #定时器
+        self.time1 = QTimer()
+        self.time1.timeout.connect(self.dingshi)
+        self.time1.start(2000)  #1s
+
+if __name__ == "__main__":
+    app=QApplication(sys.argv)
+    my=mywindow()
+    my.show()
+    sys.exit(app.exec_())
+````
+
+###### 问题：API
+
+![image-20241012185039643](./学会使用PyQt5.assets/image-20241012185039643.png)
+
+1. ### AccessToken
+
+   **POST**
+
+![image-20241012185155338](./学会使用PyQt5.assets/image-20241012185155338.png)
+
+2. 传感器（温度传感器为例）
+
+   **GET**
+
+![image-20241012185358839](./学会使用PyQt5.assets/image-20241012185358839.png)
+
+3.执行器（风扇为例）
+
+**GET**
+
+![image-20241012185444147](./学会使用PyQt5.assets/image-20241012185444147.png)
 
